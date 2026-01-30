@@ -3,6 +3,7 @@ package server
 import (
 	"log/slog"
 	"net/http"
+	"time"
 )
 
 type Server struct {
@@ -12,8 +13,11 @@ type Server struct {
 func New(router http.Handler, port string) *Server {
 	return &Server{
 		myServer: &http.Server{
-			Addr:    ":" + port, // "8080"
-			Handler: router,
+			Addr:           ":" + port,
+			Handler:        router,
+			MaxHeaderBytes: http.DefaultMaxHeaderBytes,
+			ReadTimeout:    40 * time.Second,
+			WriteTimeout:   40 * time.Second,
 		},
 	}
 }
