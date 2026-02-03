@@ -6,9 +6,12 @@ import (
 	"os"
 
 	"github.com/bekzat-kamen/startGO.git/internal/config"
+	"github.com/bekzat-kamen/startGO.git/internal/handler"
 	"github.com/bekzat-kamen/startGO.git/internal/pkg/logger"
+	"github.com/bekzat-kamen/startGO.git/internal/repository"
 	"github.com/bekzat-kamen/startGO.git/internal/server"
-	"github.com/gin-gonic/gin"
+	"github.com/bekzat-kamen/startGO.git/internal/service"
+	_ "github.com/gin-gonic/gin"
 )
 
 func main() {
@@ -21,9 +24,19 @@ func main() {
 	slogger := logger.New(cfg.LogLevel)
 	slog.SetDefault(slogger)
 
-	r := gin.New()
+	// 	r := gin.New()
+	db, err := repository.NewPostgresDB(cfg)
+	if err != nil {
+		log.Fatalf("Failed to connect to database: %s", err.Error())
+		return
+	}
 
-	srv := server.New(r, cfg.Port)
+	courseRepo := repository.NewPsgCourseRepo(db)
+	courseService := service.NewCourseService(courseRepo)
+	h := handler.NewHandler(courseService)
+	router, err := h.InitRoutes()
+
+	srv := server.New(router, cfg.Port)
 	err = srv.Run()
 	if err != nil {
 		slog.Error("failed to start server", "error", err.Error())
