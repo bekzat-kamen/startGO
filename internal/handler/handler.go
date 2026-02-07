@@ -37,5 +37,9 @@ func (h *Handler) GetCourses(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, courses)
 	return
-
+	kdl
+	sakd
+	laskd
+	askd
+	l
 }
