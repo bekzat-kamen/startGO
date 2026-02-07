@@ -30,6 +30,9 @@ func (h *Handler) InitRoutes() (*gin.Engine, error) {
 func (h *Handler) GetCourses(c *gin.Context) {
 	courses, err := h.courseService.GetAll()
 	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": err.Error(),
+		})
 		return
 	}
 	c.JSON(http.StatusOK, courses)

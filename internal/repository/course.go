@@ -1,28 +1,38 @@
 package repository
 
-import "github.com/bekzat-kamen/startGO.git/internal/models"
+import (
+	"github.com/bekzat-kamen/startGO.git/internal/models"
+	"github.com/jmoiron/sqlx"
+)
 
 type CourseRepo interface {
-	GetAll([]models.Course, error)
+	GetAll() ([]models.Course, error)
 
 	// TODO реализуй остальные методы
 }
 
 type PsgCourseRepo struct {
-	db *DB
+	db *sqlx.DB
 }
 
-func NewPsgCourseRepo(db *DB) *PsgCourseRepo {
+func NewPsgCourseRepo(db *sqlx.DB) *PsgCourseRepo {
 	return &PsgCourseRepo{
 		db: db,
 	}
 }
 
 func (p *PsgCourseRepo) GetAll() ([]models.Course, error) {
-	//TODO исползовать db для получение данных и POSTGRES
-	return []models.Course{
-		{ID: 1, Name: "GO BASICS"},
-		{ID: 2, Name: "SQL BASICS"},
-		{ID: 3, Name: "JAVA BASICS"},
-	}, nil
+	var courses []models.Course
+
+	var query = `
+	SELECT 	id, title, description, slug, price, duration,level, is_active, instructor_id, created_at, updated_at, deleted_at
+	FROM courses
+	WHERE deleted_at IS NULL
+	ORDER BY created_at DESC
+	`
+	err := p.db.Select(&courses, query)
+	if err != nil {
+		return nil, err
+	}
+	return courses, nil
 }

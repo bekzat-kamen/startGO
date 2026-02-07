@@ -30,7 +30,7 @@ func main() {
 		log.Fatalf("Failed to connect to database: %s", err.Error())
 		return
 	}
-
+	
 	courseRepo := repository.NewPsgCourseRepo(db)
 	courseService := service.NewCourseService(courseRepo)
 	h := handler.NewHandler(courseService)
