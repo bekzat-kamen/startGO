@@ -21,8 +21,12 @@ func (cs *CourseService) GetAll() ([]models.Course, error) {
 	return cs.repo.GetAll()
 }
 
-func (cs *CourseService) GetCourseById(id int) (models.Course, error) {
+func (cs *CourseService) GetByID(id int) (models.Course, error) {
 	return cs.repo.GetByID(id)
+}
+
+func (cs *CourseService) Update(id int, input models.UpdateCourse) (int, error) {
+	return cs.repo.Update(id, input)
 }
 
 func (cs *CourseService) DeleteByID(id int) error {

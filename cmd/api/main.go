@@ -30,11 +30,21 @@ func main() {
 		log.Fatalf("Failed to connect to database: %s", err.Error())
 		return
 	}
-	
+
 	courseRepo := repository.NewPsgCourseRepo(db)
+	lessonRepo := repository.NewPsgLessonRepo(db)
+	userRepo := repository.NewPsgUserRepo(db)
+
 	courseService := service.NewCourseService(courseRepo)
-	h := handler.NewHandler(courseService)
+	lessonService := service.NewLessonService(lessonRepo)
+	userService := service.NewUserService(userRepo)
+
+	h := handler.NewHandler(courseService, lessonService, userService)
 	router, err := h.InitRoutes()
+	if err != nil {
+		log.Fatalf("Failed to init routes: %s", err.Error())
+		return
+	}
 
 	srv := server.New(router, cfg.Port)
 	err = srv.Run()

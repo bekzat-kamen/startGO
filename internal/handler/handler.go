@@ -1,98 +1,44 @@
 package handler
 
 import (
-	"errors"
-	"net/http"
-	"strconv"
-
-	"github.com/bekzat-kamen/startGO.git/internal/models"
 	"github.com/bekzat-kamen/startGO.git/internal/service"
 	"github.com/gin-gonic/gin"
 )
 
 type Handler struct {
 	courseService *service.CourseService
+	lessonService *service.LessonService
+	userService   *service.UserService
 }
 
-func NewHandler(cs *service.CourseService) *Handler {
+func NewHandler(cs *service.CourseService, ls *service.LessonService, us *service.UserService) *Handler {
 	return &Handler{
 		courseService: cs,
+		lessonService: ls,
+		userService:   us,
 	}
 }
 
 func (h *Handler) InitRoutes() (*gin.Engine, error) {
 	r := gin.New()
+
 	r.GET("/courses", h.GetCourses)
-	r.GET("/courses/:id", h.GetCourseById)
+	r.GET("/courses/:id", h.GetCourseByID) // localhost:8080/courses/@#@
 	r.DELETE("/courses/:id", h.DeleteCourse)
 	r.POST("/courses", h.CreateCourse)
-	// other routes
+	r.PUT("/courses/:id", h.UpdateCourse)
+
+	r.GET("/lessons", h.GetLessons)
+	r.GET("/lessons/:id", h.GetLessonByID)
+	r.DELETE("/lessons/:id", h.DeleteLesson)
+	r.POST("/lessons", h.CreateLesson)
+	r.PUT("/lessons/:id", h.UpdateLesson)
+
+	r.GET("/users", h.GetUsers)
+	r.GET("/users/:id", h.GetUserByID)
+	r.POST("/users", h.CreateUser)
+	r.PUT("/users/:id", h.UpdateUser)
+	r.DELETE("/users/:id", h.DeleteUser)
+
 	return r, nil
-}
-
-func (h *Handler) CreateCourse(c *gin.Context) {
-	var input models.CreateCourse
-	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	id, err := h.courseService.Create(input)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-	c.JSON(http.StatusCreated, gin.H{"id": id})
-
-}
-
-func (h *Handler) DeleteCourse(c *gin.Context) {
-	id, err := strconv.Atoi(c.Param("id"))
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-	err = h.courseService.DeleteByID(id)
-	if err != nil {
-		if errors.Is(err, models.ErrNotFound) {
-			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
-			return
-		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"status": "deleted"})
-}
-
-func (h *Handler) GetCourses(c *gin.Context) {
-	courses, err := h.courseService.GetAll()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"message": err.Error(),
-		})
-		return
-	}
-	c.JSON(http.StatusOK, courses)
-	return
-
-}
-
-func (h *Handler) GetCourseById(c *gin.Context) {
-	id, err := strconv.Atoi(c.Param("id"))
-	if err != nil {
-
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id parameter"})
-		return
-	}
-
-	course, err := h.courseService.GetCourseById(id)
-	if err != nil {
-		if errors.Is(err, models.ErrNotFound) {
-			c.JSON(http.StatusNotFound, gin.H{"message": models.ErrNotFound.Error()})
-		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-	c.JSON(http.StatusOK, course)
 }
