@@ -10,6 +10,8 @@ import (
 )
 
 func (h *Handler) UpdateCourse(c *gin.Context) {
+	ctx := c.Request.Context()
+
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid course id"})
@@ -24,7 +26,7 @@ func (h *Handler) UpdateCourse(c *gin.Context) {
 		return
 	}
 
-	updatedID, err := h.courseService.Update(id, input)
+	updatedID, err := h.courseService.Update(ctx, id, input)
 	if err != nil {
 		if errors.Is(err, models.ErrCourseNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "course to update not found"})
@@ -40,6 +42,8 @@ func (h *Handler) UpdateCourse(c *gin.Context) {
 }
 
 func (h *Handler) CreateCourse(c *gin.Context) {
+	ctx := c.Request.Context()
+
 	var input models.CreateCourse
 
 	if err := c.ShouldBindJSON(&input); err != nil {
@@ -49,7 +53,7 @@ func (h *Handler) CreateCourse(c *gin.Context) {
 		return
 	}
 
-	id, err := h.courseService.Create(input)
+	id, err := h.courseService.Create(ctx, input)
 	if err != nil {
 		var status int
 		var message string
@@ -76,13 +80,15 @@ func (h *Handler) CreateCourse(c *gin.Context) {
 }
 
 func (h *Handler) DeleteCourse(c *gin.Context) {
+	ctx := c.Request.Context()
+
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid course id"})
 		return
 	}
 
-	err = h.courseService.DeleteByID(id)
+	err = h.courseService.DeleteByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, models.ErrCourseNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "course to delete not found"})
@@ -96,13 +102,15 @@ func (h *Handler) DeleteCourse(c *gin.Context) {
 }
 
 func (h *Handler) GetCourseByID(c *gin.Context) {
+	ctx := c.Request.Context()
+
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid course id"})
 		return
 	}
 
-	course, err := h.courseService.GetByID(id)
+	course, err := h.courseService.GetByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, models.ErrCourseNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Course not found"})
@@ -116,7 +124,9 @@ func (h *Handler) GetCourseByID(c *gin.Context) {
 }
 
 func (h *Handler) GetCourses(c *gin.Context) {
-	courses, err := h.courseService.GetAll()
+	ctx := c.Request.Context()
+
+	courses, err := h.courseService.GetAll(ctx)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "failed tp select data",

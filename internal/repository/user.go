@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -11,11 +12,11 @@ import (
 )
 
 type UserRepo interface {
-	GetAll() ([]models.User, error)
-	GetByID(id int) (models.User, error)
-	DeleteByID(id int) error
-	Create(input models.CreateUser) (int, error)
-	Update(id int, input models.UpdateUser) (int, error)
+	GetAll(ctx context.Context) ([]models.User, error)
+	GetByID(ctx context.Context, id int) (models.User, error)
+	DeleteByID(ctx context.Context, id int) error
+	Create(ctx context.Context, input models.CreateUser) (int, error)
+	Update(ctx context.Context, id int, input models.UpdateUser) (int, error)
 }
 
 type PsgUserRepo struct {
@@ -26,20 +27,20 @@ func NewPsgUserRepo(db *sqlx.DB) *PsgUserRepo {
 	return &PsgUserRepo{db: db}
 }
 
-func (p *PsgUserRepo) GetAll() ([]models.User, error) {
+func (p *PsgUserRepo) GetAll(ctx context.Context) ([]models.User, error) {
 	var users []models.User
 	query := `
 	SELECT id, full_name, email, password_hash, role, is_active, created_at, updated_at
 	FROM users
 	ORDER BY created_at DESC
 	`
-	if err := p.db.Select(&users, query); err != nil {
+	if err := p.db.SelectContext(ctx, &users, query); err != nil {
 		return nil, fmt.Errorf("get users: %w", err)
 	}
 	return users, nil
 }
 
-func (p *PsgUserRepo) GetByID(id int) (models.User, error) {
+func (p *PsgUserRepo) GetByID(ctx context.Context, id int) (models.User, error) {
 	var user models.User
 	query := `
 	SELECT id, full_name, email, password_hash, role, is_active, created_at, updated_at
@@ -47,7 +48,7 @@ func (p *PsgUserRepo) GetByID(id int) (models.User, error) {
 	WHERE id = $1
 	LIMIT 1
 	`
-	if err := p.db.Get(&user, query, id); err != nil {
+	if err := p.db.GetContext(ctx, &user, query, id); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return models.User{}, models.ErrUserNotFound
 		}
@@ -56,10 +57,10 @@ func (p *PsgUserRepo) GetByID(id int) (models.User, error) {
 	return user, nil
 }
 
-func (p *PsgUserRepo) Create(input models.CreateUser) (int, error) {
+func (p *PsgUserRepo) Create(ctx context.Context, input models.CreateUser) (int, error) {
 	var emailExists bool
 	checkEmailQuery := `SELECT EXISTS (SELECT 1 FROM users WHERE email = $1)`
-	if err := p.db.Get(&emailExists, checkEmailQuery, input.Email); err != nil {
+	if err := p.db.GetContext(ctx, &emailExists, checkEmailQuery, input.Email); err != nil {
 		return 0, fmt.Errorf("check email existence: %w", err)
 	}
 	if emailExists {
@@ -78,21 +79,21 @@ func (p *PsgUserRepo) Create(input models.CreateUser) (int, error) {
 	VALUES (:full_name, :email, :password_hash, :role, :is_active, :created_at, :updated_at)
 	RETURNING id
 	`
-	stmt, err := p.db.PrepareNamed(query)
+	stmt, err := p.db.PrepareNamedContext(ctx, query)
 	if err != nil {
 		return 0, fmt.Errorf("prepare create user: %w", err)
 	}
 	defer stmt.Close()
 
 	var id int
-	if err := stmt.Get(&id, input); err != nil {
+	if err := stmt.GetContext(ctx, &id, input); err != nil {
 		return 0, fmt.Errorf("execute create user: %w", err)
 	}
 	return id, nil
 }
 
-func (p *PsgUserRepo) Update(id int, input models.UpdateUser) (int, error) {
-	current, err := p.GetByID(id)
+func (p *PsgUserRepo) Update(ctx context.Context, id int, input models.UpdateUser) (int, error) {
+	current, err := p.GetByID(ctx, id)
 	if err != nil {
 		return 0, err
 	}
@@ -100,7 +101,7 @@ func (p *PsgUserRepo) Update(id int, input models.UpdateUser) (int, error) {
 	if input.Email != nil && *input.Email != current.Email {
 		var emailExists bool
 		checkEmailQuery := `SELECT EXISTS (SELECT 1 FROM users WHERE email = $1 AND id <> $2)`
-		if err := p.db.Get(&emailExists, checkEmailQuery, *input.Email, id); err != nil {
+		if err := p.db.GetContext(ctx, &emailExists, checkEmailQuery, *input.Email, id); err != nil {
 			return 0, fmt.Errorf("check email existence for update: %w", err)
 		}
 		if emailExists {
@@ -120,7 +121,8 @@ func (p *PsgUserRepo) Update(id int, input models.UpdateUser) (int, error) {
 	RETURNING id
 	`
 	var updatedID int
-	err = p.db.QueryRow(
+	err = p.db.QueryRowContext(
+		ctx,
 		query,
 		input.FullName,
 		input.Email,
@@ -138,9 +140,9 @@ func (p *PsgUserRepo) Update(id int, input models.UpdateUser) (int, error) {
 	return updatedID, nil
 }
 
-func (p *PsgUserRepo) DeleteByID(id int) error {
+func (p *PsgUserRepo) DeleteByID(ctx context.Context, id int) error {
 	query := `DELETE FROM users WHERE id = $1`
-	result, err := p.db.Exec(query, id)
+	result, err := p.db.ExecContext(ctx, query, id)
 	if err != nil {
 		return fmt.Errorf("delete user by id: %w", err)
 	}

@@ -1,6 +1,8 @@
 package service
 
 import (
+	"context"
+
 	"github.com/bekzat-kamen/startGO.git/internal/models"
 	"github.com/bekzat-kamen/startGO.git/internal/repository"
 )
@@ -13,22 +15,22 @@ func NewUserService(repo repository.UserRepo) *UserService {
 	return &UserService{repo: repo}
 }
 
-func (s *UserService) GetAll() ([]models.User, error) {
-	return s.repo.GetAll()
+func (s *UserService) GetAll(ctx context.Context) ([]models.User, error) {
+	return s.repo.GetAll(ctx)
 }
 
-func (s *UserService) GetByID(id int) (models.User, error) {
-	return s.repo.GetByID(id)
+func (s *UserService) GetByID(ctx context.Context, id int) (models.User, error) {
+	return s.repo.GetByID(ctx, id)
 }
 
-func (s *UserService) Create(input models.CreateUser) (int, error) {
-	return s.repo.Create(input)
+func (s *UserService) Create(ctx context.Context, input models.CreateUser) (int, error) {
+	return s.repo.Create(ctx, input)
 }
 
-func (s *UserService) Update(id int, input models.UpdateUser) (int, error) {
-	return s.repo.Update(id, input)
+func (s *UserService) Update(ctx context.Context, id int, input models.UpdateUser) (int, error) {
+	return s.repo.Update(ctx, id, input)
 }
 
-func (s *UserService) DeleteByID(id int) error {
-	return s.repo.DeleteByID(id)
+func (s *UserService) DeleteByID(ctx context.Context, id int) error {
+	return s.repo.DeleteByID(ctx, id)
 }

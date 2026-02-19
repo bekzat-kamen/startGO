@@ -10,7 +10,9 @@ import (
 )
 
 func (h *Handler) GetLessons(c *gin.Context) {
-	lessons, err := h.lessonService.GetAll()
+	ctx := c.Request.Context()
+
+	lessons, err := h.lessonService.GetAll(ctx)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to select lessons"})
 		return
@@ -20,13 +22,15 @@ func (h *Handler) GetLessons(c *gin.Context) {
 }
 
 func (h *Handler) GetLessonByID(c *gin.Context) {
+	ctx := c.Request.Context()
+
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid lesson id"})
 		return
 	}
 
-	lesson, err := h.lessonService.GetByID(id)
+	lesson, err := h.lessonService.GetByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, models.ErrLessonNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "lesson not found"})
@@ -40,13 +44,15 @@ func (h *Handler) GetLessonByID(c *gin.Context) {
 }
 
 func (h *Handler) CreateLesson(c *gin.Context) {
+	ctx := c.Request.Context()
+
 	var input models.CreateLesson
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 		return
 	}
 
-	id, err := h.lessonService.Create(input)
+	id, err := h.lessonService.Create(ctx, input)
 	if err != nil {
 		if errors.Is(err, models.ErrCourseNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "course not found"})
@@ -60,6 +66,8 @@ func (h *Handler) CreateLesson(c *gin.Context) {
 }
 
 func (h *Handler) UpdateLesson(c *gin.Context) {
+	ctx := c.Request.Context()
+
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid lesson id"})
@@ -72,7 +80,7 @@ func (h *Handler) UpdateLesson(c *gin.Context) {
 		return
 	}
 
-	updatedID, err := h.lessonService.Update(id, input)
+	updatedID, err := h.lessonService.Update(ctx, id, input)
 	if err != nil {
 		switch {
 		case errors.Is(err, models.ErrLessonNotFound):
@@ -91,13 +99,15 @@ func (h *Handler) UpdateLesson(c *gin.Context) {
 }
 
 func (h *Handler) DeleteLesson(c *gin.Context) {
+	ctx := c.Request.Context()
+
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid lesson id"})
 		return
 	}
 
-	err = h.lessonService.DeleteByID(id)
+	err = h.lessonService.DeleteByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, models.ErrLessonNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "lesson to delete not found"})

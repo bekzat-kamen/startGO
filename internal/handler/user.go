@@ -10,7 +10,9 @@ import (
 )
 
 func (h *Handler) GetUsers(c *gin.Context) {
-	users, err := h.userService.GetAll()
+	ctx := c.Request.Context()
+
+	users, err := h.userService.GetAll(ctx)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to select users"})
 		return
@@ -20,13 +22,15 @@ func (h *Handler) GetUsers(c *gin.Context) {
 }
 
 func (h *Handler) GetUserByID(c *gin.Context) {
+	ctx := c.Request.Context()
+
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
 		return
 	}
 
-	user, err := h.userService.GetByID(id)
+	user, err := h.userService.GetByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, models.ErrUserNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
@@ -40,13 +44,15 @@ func (h *Handler) GetUserByID(c *gin.Context) {
 }
 
 func (h *Handler) CreateUser(c *gin.Context) {
+	ctx := c.Request.Context()
+
 	var input models.CreateUser
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 		return
 	}
 
-	id, err := h.userService.Create(input)
+	id, err := h.userService.Create(ctx, input)
 	if err != nil {
 		if errors.Is(err, models.ErrEmailAlreadyExists) {
 			c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
@@ -60,6 +66,8 @@ func (h *Handler) CreateUser(c *gin.Context) {
 }
 
 func (h *Handler) UpdateUser(c *gin.Context) {
+	ctx := c.Request.Context()
+
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
@@ -72,7 +80,7 @@ func (h *Handler) UpdateUser(c *gin.Context) {
 		return
 	}
 
-	updatedID, err := h.userService.Update(id, input)
+	updatedID, err := h.userService.Update(ctx, id, input)
 	if err != nil {
 		switch {
 		case errors.Is(err, models.ErrUserNotFound):
@@ -91,13 +99,15 @@ func (h *Handler) UpdateUser(c *gin.Context) {
 }
 
 func (h *Handler) DeleteUser(c *gin.Context) {
+	ctx := c.Request.Context()
+
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
 		return
 	}
 
-	if err := h.userService.DeleteByID(id); err != nil {
+	if err := h.userService.DeleteByID(ctx, id); err != nil {
 		if errors.Is(err, models.ErrUserNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "user to delete not found"})
 			return

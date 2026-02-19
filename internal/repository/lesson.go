@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -11,11 +12,11 @@ import (
 )
 
 type LessonRepo interface {
-	GetAll() ([]models.Lesson, error)
-	GetByID(id int) (models.Lesson, error)
-	DeleteByID(id int) error
-	Create(input models.CreateLesson) (int, error)
-	Update(id int, input models.UpdateLesson) (int, error)
+	GetAll(ctx context.Context) ([]models.Lesson, error)
+	GetByID(ctx context.Context, id int) (models.Lesson, error)
+	DeleteByID(ctx context.Context, id int) error
+	Create(ctx context.Context, input models.CreateLesson) (int, error)
+	Update(ctx context.Context, id int, input models.UpdateLesson) (int, error)
 }
 
 type PsgLessonRepo struct {
@@ -26,7 +27,7 @@ func NewPsgLessonRepo(db *sqlx.DB) *PsgLessonRepo {
 	return &PsgLessonRepo{db: db}
 }
 
-func (p *PsgLessonRepo) GetAll() ([]models.Lesson, error) {
+func (p *PsgLessonRepo) GetAll(ctx context.Context) ([]models.Lesson, error) {
 	var lessons []models.Lesson
 	query := `
 	SELECT id, course_id, title, content, video_url, duration, position, is_preview, created_at, updated_at, deleted_at
@@ -34,13 +35,13 @@ func (p *PsgLessonRepo) GetAll() ([]models.Lesson, error) {
 	WHERE deleted_at IS NULL
 	ORDER BY position ASC, created_at ASC
 	`
-	if err := p.db.Select(&lessons, query); err != nil {
+	if err := p.db.SelectContext(ctx, &lessons, query); err != nil {
 		return nil, fmt.Errorf("get lessons: %w", err)
 	}
 	return lessons, nil
 }
 
-func (p *PsgLessonRepo) GetByID(id int) (models.Lesson, error) {
+func (p *PsgLessonRepo) GetByID(ctx context.Context, id int) (models.Lesson, error) {
 	var lesson models.Lesson
 	query := `
 	SELECT id, course_id, title, content, video_url, duration, position, is_preview, created_at, updated_at, deleted_at
@@ -48,7 +49,7 @@ func (p *PsgLessonRepo) GetByID(id int) (models.Lesson, error) {
 	WHERE id = $1 AND deleted_at IS NULL
 	LIMIT 1
 	`
-	if err := p.db.Get(&lesson, query, id); err != nil {
+	if err := p.db.GetContext(ctx, &lesson, query, id); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return models.Lesson{}, models.ErrLessonNotFound
 		}
@@ -57,10 +58,10 @@ func (p *PsgLessonRepo) GetByID(id int) (models.Lesson, error) {
 	return lesson, nil
 }
 
-func (p *PsgLessonRepo) Create(input models.CreateLesson) (int, error) {
+func (p *PsgLessonRepo) Create(ctx context.Context, input models.CreateLesson) (int, error) {
 	var courseExists bool
 	checkCourseQuery := `SELECT EXISTS (SELECT 1 FROM courses WHERE id = $1 AND deleted_at IS NULL)`
-	if err := p.db.Get(&courseExists, checkCourseQuery, input.CourseID); err != nil {
+	if err := p.db.GetContext(ctx, &courseExists, checkCourseQuery, input.CourseID); err != nil {
 		return 0, fmt.Errorf("check course existence: %w", err)
 	}
 	if !courseExists {
@@ -75,28 +76,28 @@ func (p *PsgLessonRepo) Create(input models.CreateLesson) (int, error) {
 	VALUES (:course_id, :title, :content, :video_url, :duration, :position, :is_preview, :created_at, :updated_at)
 	RETURNING id
 	`
-	stmt, err := p.db.PrepareNamed(query)
+	stmt, err := p.db.PrepareNamedContext(ctx, query)
 	if err != nil {
 		return 0, fmt.Errorf("prepare create lesson: %w", err)
 	}
 	defer stmt.Close()
 
 	var id int
-	if err := stmt.Get(&id, input); err != nil {
+	if err := stmt.GetContext(ctx, &id, input); err != nil {
 		return 0, fmt.Errorf("execute create lesson: %w", err)
 	}
 	return id, nil
 }
 
-func (p *PsgLessonRepo) Update(id int, input models.UpdateLesson) (int, error) {
-	if _, err := p.GetByID(id); err != nil {
+func (p *PsgLessonRepo) Update(ctx context.Context, id int, input models.UpdateLesson) (int, error) {
+	if _, err := p.GetByID(ctx, id); err != nil {
 		return 0, err
 	}
 
 	if input.CourseID != nil {
 		var courseExists bool
 		checkCourseQuery := `SELECT EXISTS (SELECT 1 FROM courses WHERE id = $1 AND deleted_at IS NULL)`
-		if err := p.db.Get(&courseExists, checkCourseQuery, *input.CourseID); err != nil {
+		if err := p.db.GetContext(ctx, &courseExists, checkCourseQuery, *input.CourseID); err != nil {
 			return 0, fmt.Errorf("check course existence for update: %w", err)
 		}
 		if !courseExists {
@@ -118,7 +119,8 @@ func (p *PsgLessonRepo) Update(id int, input models.UpdateLesson) (int, error) {
 	RETURNING id
 	`
 	var updatedID int
-	err := p.db.QueryRow(
+	err := p.db.QueryRowContext(
+		ctx,
 		query,
 		input.CourseID,
 		input.Title,
@@ -138,9 +140,9 @@ func (p *PsgLessonRepo) Update(id int, input models.UpdateLesson) (int, error) {
 	return updatedID, nil
 }
 
-func (p *PsgLessonRepo) DeleteByID(id int) error {
+func (p *PsgLessonRepo) DeleteByID(ctx context.Context, id int) error {
 	query := `UPDATE lessons SET deleted_at = NOW(), updated_at = NOW() WHERE id = $1 AND deleted_at IS NULL`
-	result, err := p.db.Exec(query, id)
+	result, err := p.db.ExecContext(ctx, query, id)
 	if err != nil {
 		return fmt.Errorf("delete lesson by id: %w", err)
 	}
