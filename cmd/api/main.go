@@ -38,8 +38,9 @@ func main() {
 	courseService := service.NewCourseService(courseRepo)
 	lessonService := service.NewLessonService(lessonRepo)
 	userService := service.NewUserService(userRepo)
+	authService := service.NewAuthService(userRepo)
 
-	h := handler.NewHandler(courseService, lessonService, userService)
+	h := handler.NewHandler(courseService, lessonService, userService, authService)
 	router, err := h.InitRoutes()
 	if err != nil {
 		log.Fatalf("Failed to init routes: %s", err.Error())

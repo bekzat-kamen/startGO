@@ -9,13 +9,15 @@ type Handler struct {
 	courseService *service.CourseService
 	lessonService *service.LessonService
 	userService   *service.UserService
+	authService   *service.AuthService
 }
 
-func NewHandler(cs *service.CourseService, ls *service.LessonService, us *service.UserService) *Handler {
+func NewHandler(cs *service.CourseService, ls *service.LessonService, us *service.UserService, as *service.AuthService) *Handler {
 	return &Handler{
 		courseService: cs,
 		lessonService: ls,
 		userService:   us,
+		authService:   as,
 	}
 }
 
@@ -39,6 +41,7 @@ func (h *Handler) InitRoutes() (*gin.Engine, error) {
 	r.POST("/users", h.CreateUser)
 	r.PUT("/users/:id", h.UpdateUser)
 	r.DELETE("/users/:id", h.DeleteUser)
+	r.POST("/auth/register", h.Register)
 
 	return r, nil
 }

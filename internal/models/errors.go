@@ -3,10 +3,14 @@ package models
 import "errors"
 
 var (
-	ErrCourseNotFound     = errors.New("course not found")
-	ErrLessonNotFound     = errors.New("lesson not found")
-	ErrUserNotFound       = errors.New("user not found")
-	ErrTeacherNotFound    = errors.New("teacher not found")
-	ErrSlugAlreadyExists  = errors.New("course slug already exists")
-	ErrEmailAlreadyExists = errors.New("user email already exists")
+	ErrCourseNotFound    = errors.New("course not found error")
+	ErrSlugAlreadyExists = errors.New("this slug is already exists in courses")
+	ErrLessonNotFound    = errors.New("lesson not found error")
+)
+
+var (
+	ErrUserAlreadyExists  = errors.New("user already exists")
+	ErrInvalidCredentials = errors.New("invalid credentials")
+	ErrTeacherNotFound    = errors.New("no teacher with this ID error")
+	ErrUserNotFound       = errors.New("user with email not found error")
 )

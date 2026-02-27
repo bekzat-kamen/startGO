@@ -54,7 +54,7 @@ func (h *Handler) CreateUser(c *gin.Context) {
 
 	id, err := h.userService.Create(ctx, input)
 	if err != nil {
-		if errors.Is(err, models.ErrEmailAlreadyExists) {
+		if errors.Is(err, models.ErrUserAlreadyExists) {
 			c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
 			return
 		}
@@ -86,7 +86,7 @@ func (h *Handler) UpdateUser(c *gin.Context) {
 		case errors.Is(err, models.ErrUserNotFound):
 			c.JSON(http.StatusNotFound, gin.H{"error": "user to update not found"})
 			return
-		case errors.Is(err, models.ErrEmailAlreadyExists):
+		case errors.Is(err, models.ErrUserAlreadyExists):
 			c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
 			return
 		default:

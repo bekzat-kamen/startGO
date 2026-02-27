@@ -30,3 +30,14 @@ type UpdateUser struct {
 	Role         *string `db:"role" json:"role"`
 	IsActive     *bool   `db:"is_active" json:"is_active"`
 }
+
+type RegisterUser struct {
+	FullName string `json:"full_name" binding:"required"`
+	Email    string `json:"email" binding:"required,email"`
+	Password string `json:"password" binding:"required,password"`
+}
+
+type LoginUser struct {
+	Email    string `json:"email" binding:"required,email"`
+	Password string `json:"password" binding:"required"`
+}

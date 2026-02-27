@@ -1,7 +1,9 @@
 package config
 
 import (
+	"fmt"
 	"os"
+	"time"
 
 	"github.com/joho/godotenv"
 )
@@ -9,7 +11,9 @@ import (
 type Config struct {
 	Port     string
 	LogLevel string
+
 	Database *DBConfig
+	JWT      *JWTConfig
 }
 
 type DBConfig struct {
@@ -21,11 +25,25 @@ type DBConfig struct {
 	SSLMode  string
 }
 
+type JWTConfig struct {
+	Secret     string
+	AccessTTL  time.Duration
+	RefreshTTL time.Duration
+	Issuer     string
+}
+
 func Load() (*Config, error) {
 	if err := godotenv.Load(); err != nil {
 		return nil, err
 	}
-
+	accessTTL, err := parseDurationEnv("JWT_ACCESS_TTL", "15m")
+	if err != nil {
+		return nil, err
+	}
+	refreshTTL, err := parseDurationEnv("JWT_REFRESH_TTL", "720h")
+	if err != nil {
+		return nil, err
+	}
 	return &Config{
 		Port:     getEnv("PORT", "8080"),
 		LogLevel: getEnv("LOG_LEVEL", "INFO"),
@@ -38,6 +56,12 @@ func Load() (*Config, error) {
 			Database: getEnv("DB_NAME", "neondb"),
 			SSLMode:  getEnv("SSL_MODE", "require"),
 		},
+		JWT: &JWTConfig{
+			Secret:     getEnv("JWT_SECRET", "secret"),
+			AccessTTL:  accessTTL,
+			RefreshTTL: refreshTTL,
+			Issuer:     getEnv("JWT_ISSUER", "company-name"),
+		},
 	}, nil
 }
 
@@ -47,4 +71,13 @@ func getEnv(key, defaultValue string) string {
 	}
 
 	return defaultValue
+}
+
+func parseDurationEnv(key, defaultValue string) (time.Duration, error) {
+	value := getEnv(key, defaultValue)
+	duration, err := time.ParseDuration(value)
+	if err != nil {
+		return 0, fmt.Errorf("invalid duration for %s: %w", key, err)
+	}
+	return duration, nil
 }
