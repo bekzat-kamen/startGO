@@ -15,7 +15,7 @@ import (
 )
 
 func main() {
-	//test git
+
 	cfg, err := config.Load()
 	if err != nil {
 		log.Fatalf("Failed to load config: %s", err.Error())
